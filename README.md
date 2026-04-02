@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌀 NexusTube Pro Downloader
+# 🌀 NexusTube Downloader
 
 ### *Sistema de Extração em Nível Quântico*
 

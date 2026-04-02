@@ -92,8 +92,8 @@
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/NexusTube-Pro-Downloader.git
-cd NexusTube-Pro-Downloader
+git clone https://github.com/EricBotelhoSantos/Projeto-Python-DownloadYoutube.git
+cd Projeto-Python-DownloadYoutube
 
 # 2. Crie e ative o ambiente virtual
 python -m venv .venv

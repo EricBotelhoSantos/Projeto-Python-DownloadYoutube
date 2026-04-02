@@ -1,13 +1,13 @@
 [Setup]
 ; Configurações Básicas do Instalador
-AppName=NexusTube Pro Downloader
-AppVersion=1.0
-AppPublisher=Seu Nome/Empresa
+AppName=NexusTubeDownloader
+AppVersion=2.0
+AppPublisher=Eric Botelho Santos
 DefaultDirName={pf}\NexusTubeDownloader
 DefaultGroupName=NexusTubeDownloader
 ; Onde o instalador final será gerado e qual o nome dele
 OutputDir=.\Instalador_Final
-OutputBaseFilename=Instalar_NexusTubeDownloader_v1
+OutputBaseFilename=Instalar_NexusTubeDownloader_v2
 ; Ícone do próprio "Wizard" de instalação
 SetupIconFile=app_icon.ico
 Compression=lzma2
@@ -23,7 +23,7 @@ Source: "dist\NexusTubeDownloader.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Cria atalho no Menu Iniciar
-Name: "{group}\NexusTube Pro Downloader"; Filename: "{app}\NexusTubeDownloader.exe"
+Name: "{group}\NexusTubeDownloader"; Filename: "{app}\NexusTubeDownloader.exe"
 ; Cria atalho na Área de Trabalho caso o usuário marque a caixinha
 Name: "{commondesktop}\NexusTubeDownloader"; Filename: "{app}\NexusTubeDownloader.exe"; Tasks: desktopicon
 

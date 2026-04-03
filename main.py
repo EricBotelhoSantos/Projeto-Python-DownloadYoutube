@@ -26,7 +26,7 @@ def resource_path(relative_path):
 def get_ffmpeg_dir():
     # Usa a pasta de AppData livre de restrições de permissão do Windows
     import os
-    app_data = os.path.join(os.getenv('APPDATA', os.path.expanduser('~')), 'NexusTubePro')
+    app_data = os.path.join(os.getenv('APPDATA', os.path.expanduser('~')), 'NexusTube')
     os.makedirs(app_data, exist_ok=True)
     return app_data
 
@@ -189,7 +189,7 @@ def iniciar_download():
 
 # --- CONSTRUÇÃO DA JANELA ESTILIZADA ---
 app = ctk.CTk()
-app.title("NexusTube Pro Downloader")
+app.title("NexusTube Downloader")
 
 # --- CONFIGURAÇÃO DE ÍCONES (Janela e Barra de Tarefas) ---
 icon_path = resource_path("app_icon.ico")
@@ -207,7 +207,7 @@ if os.path.exists(icon_path):
     # Taskbar icon fix on Windows
     try:
         import ctypes
-        myappid = 'nexustube.pro.downloader.1.0'
+        myappid = 'nexustube.downloader.1.0'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except Exception as e:
         print(f"Erro ao definir ícone da barra de tarefas: {e}")

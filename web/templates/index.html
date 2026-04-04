@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusSave — Download de Vídeos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-grid"></div>
+    <div class="bg-orb"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">⬇</span>
+                <span class="logo-text">NexusSave</span>
+            </div>
+
+            <!-- Language Switcher -->
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="pt-BR" title="Português">
+                    <img src="{{ url_for('static', filename='images/flag-br.svg') }}" alt="Português" class="flag-icon">
+                </button>
+                <button class="lang-btn" data-lang="en" title="English">
+                    <img src="{{ url_for('static', filename='images/flag-us.svg') }}" alt="English" class="flag-icon">
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1 class="hero-title" data-i18n="heroTitle">NexusSave</h1>
+            <p class="hero-subtitle" data-i18n="heroSubtitle">Baixe vídeos de qualquer rede social</p>
+        </section>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="downloader">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span data-i18n="tabDownloader">Downloader</span>
+            </button>
+            <button class="tab-btn" data-tab="converter">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <path d="M12 18v-6"/>
+                    <path d="M9 15l3 3 3-3"/>
+                </svg>
+                <span data-i18n="tabConverter">Conversor</span>
+            </button>
+        </div>
+
+        <!-- Tab Content: Downloader -->
+        <div class="tab-content active" id="downloader">
+            <div class="card">
+                <!-- Platform Detection -->
+                <div class="platform-indicator">
+                    <span class="platform-label" data-i18n="platformLabel">Plataforma detectada:</span>
+                    <div class="platform-icons">
+                        <div class="platform-icon" data-platform="tiktok" title="TikTok">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.7 0 2.89 2.89 0 0 1 2.89-2.89c.3 0 .58.04.85.11V9.24a6.33 6.33 0 0 0-.85-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.41a8.14 8.14 0 0 0 4.77 1.52V6.69h-.08z"/>
+                            </svg>
+                        </div>
+                        <div class="platform-icon" data-platform="twitter" title="Twitter/X">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                        </div>
+                        <div class="platform-icon" data-platform="instagram" title="Instagram">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- URL Input -->
+                <div class="input-group">
+                    <input type="text" id="video-url" class="input" placeholder="Cole o link do vídeo aqui..." data-i18n-placeholder="inputPlaceholder">
+                    <button id="fetch-info-btn" class="btn btn-secondary" data-i18n="fetchBtn">Buscar</button>
+                </div>
+
+                <!-- Video Preview -->
+                <div class="video-preview hidden" id="video-preview">
+                    <img class="preview-thumbnail" id="preview-thumbnail" src="" alt="Thumbnail">
+                    <div class="preview-info">
+                        <h3 class="preview-title" id="preview-title"></h3>
+                        <p class="preview-meta" id="preview-meta"></p>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-container hidden" id="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <span class="progress-text" id="progress-text" data-i18n="downloading">Baixando...</span>
+                </div>
+
+                <!-- Download Button -->
+                <button id="download-btn" class="btn btn-primary btn-large hidden" data-i18n="downloadBtn">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Baixar Vídeo
+                </button>
+
+                <!-- Error/Success Messages -->
+                <div class="message hidden" id="downloader-message"></div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Converter -->
+        <div class="tab-content" id="converter">
+            <div class="card">
+                <div class="dropzone" id="dropzone">
+                    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p class="dropzone-text" data-i18n="dropzoneText">Arraste seu arquivo MP4 aqui</p>
+                    <p class="dropzone-subtext" data-i18n="dropzoneSubtext">ou clique para selecionar</p>
+                    <input type="file" id="file-input" accept=".mp4" hidden>
+                </div>
+
+                <!-- Selected File -->
+                <div class="selected-file hidden" id="selected-file">
+                    <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    <span class="file-name" id="file-name"></span>
+                    <button class="btn-remove" id="remove-file" title="Remover">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-container hidden" id="convert-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="convert-fill"></div>
+                    </div>
+                    <span class="progress-text" id="convert-text" data-i18n="converting">Convertendo...</span>
+                </div>
+
+                <!-- Convert Button -->
+                <button id="convert-btn" class="btn btn-primary btn-large hidden" data-i18n="convertBtn">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 3v18"/>
+                        <path d="M9 6l3-3 3 3"/>
+                    </svg>
+                    Converter para MP3
+                </button>
+
+                <!-- Error/Success Messages -->
+                <div class="message hidden" id="converter-message"></div>
+            </div>
+        </div>
+
+        <!-- Supported Platforms -->
+        <section class="supported">
+            <h2 class="supported-title" data-i18n="supportedTitle">Plataformas Suportadas</h2>
+            <div class="platforms-grid">
+                <div class="platform-card">
+                    <svg class="platform-card-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.7 0 2.89 2.89 0 0 1 2.89-2.89c.3 0 .58.04.85.11V9.24a6.33 6.33 0 0 0-.85-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.41a8.14 8.14 0 0 0 4.77 1.52V6.69h-.08z"/>
+                    </svg>
+                    <span>TikTok</span>
+                </div>
+                <div class="platform-card">
+                    <svg class="platform-card-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Twitter / X</span>
+                </div>
+                <div class="platform-card">
+                    <svg class="platform-card-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                    </svg>
+                    <span>Instagram</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p class="footer-text" data-i18n="footerText">Feito com 💚 por NexusSave</p>
+            <p class="footer-disclaimer" data-i18n="footerDisclaimer">Use apenas para baixar vídeos que você tem permissão.</p>
+        </div>
+    </footer>
+
+    <!-- FFmpeg Modal -->
+    <div class="modal" id="ffmpeg-modal">
+        <div class="modal-content modal-content--ffmpeg">
+            <!-- Shield Icon -->
+            <div class="modal-shield">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <h2 class="modal-title" data-i18n="ffmpegTitle">Componente Necessário para Conversão</h2>
+            <p class="modal-description" data-i18n="ffmpegDescription">Para converter vídeos em MP3, o NexusSave utiliza o FFmpeg — a ferramenta de processamento de áudio e vídeo mais utilizada do mundo, presente em softwares como VLC, OBS Studio, Chrome e até no WhatsApp.</p>
+
+            <!-- Trust Badges -->
+            <div class="modal-trust-badges">
+                <div class="trust-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <div class="trust-badge-text">
+                        <strong data-i18n="ffmpegBadge1Title">100% Open Source</strong>
+                        <span data-i18n="ffmpegBadge1Desc">Código aberto, que qualquer pessoa pode verificar</span>
+                    </div>
+                </div>
+                <div class="trust-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                    </svg>
+                    <div class="trust-badge-text">
+                        <strong data-i18n="ffmpegBadge2Title">Fonte Oficial Verificada</strong>
+                        <span data-i18n="ffmpegBadge2Desc">Download direto de gyan.dev (distribuidor oficial)</span>
+                    </div>
+                </div>
+                <div class="trust-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                    </svg>
+                    <div class="trust-badge-text">
+                        <strong data-i18n="ffmpegBadge3Title">Instalação Isolada</strong>
+                        <span data-i18n="ffmpegBadge3Desc">Salvo apenas na pasta do NexusSave — nada é alterado no seu sistema</span>
+                    </div>
+                </div>
+            </div>
+
+            <p class="modal-info" data-i18n="ffmpegInfo">O FFmpeg não é um vírus, não coleta dados e não acessa a internet. Ele apenas processa arquivos locais no seu computador. Milhões de desenvolvedores e empresas confiam nele diariamente.</p>
+
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="ffmpeg-install-btn" data-i18n="ffmpegInstallBtn">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Instalar com Segurança
+                </button>
+                <button class="btn btn-secondary" id="ffmpeg-cancel-btn" data-i18n="ffmpegCancelBtn">Agora Não</button>
+            </div>
+            <div class="modal-progress hidden" id="ffmpeg-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="animation: progressPulse 1.5s ease-in-out infinite;"></div>
+                </div>
+                <span data-i18n="ffmpegInstalling">Baixando e instalando FFmpeg...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/translations.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

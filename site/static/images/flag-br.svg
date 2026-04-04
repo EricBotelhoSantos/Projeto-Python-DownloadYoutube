@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 504">
-  <rect width="720" height="504" fill="#009c3b"/>
-  <path d="M0 0h720v504H0z" fill="#009c3b"/>
-  <circle cx="360" cy="252" r="180" fill="#ffdf00"/>
-  <circle cx="360" cy="252" r="144" fill="#002776"/>
-  <path d="M216 252a144 144 0 1 0 288 0 144 144 0 1 0-288 0" fill="#002776"/>
-  <path fill="#fff" d="M244 192l8 24h24l-20 16 8 24-20-16-20 16 8-24-20-16h24zm96-48l8 24h24l-20 16 8 24-20-16-20 16 8-24-20-16h24zm96 48l8 24h24l-20 16 8 24-20-16-20 16 8-24-20-16h24zm-48 96l8 24h24l-20 16 8 24-20-16-20 16 8-24-20-16h24z"/>
-  <text x="360" y="288" font-size="20" font-family="Arial" fill="#fff" text-anchor="middle">ORDEM E PROGRESSO</text>
-</svg>

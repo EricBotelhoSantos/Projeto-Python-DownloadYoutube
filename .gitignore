@@ -1,0 +1,51 @@
+# ==========================
+# NexusSave — .gitignore
+# ==========================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+*.pyo
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Build / Distribution
+dist/
+build/
+Instalador_Final/
+*.spec.bak
+
+# Generated Assets
+desktop/assets/bg.png
+bg.png
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS Files
+Thumbs.db
+Desktop.ini
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Dev Artifacts
+implementation_plan.md
+
+# Temporary
+*.tmp
+*.log
+*.bak

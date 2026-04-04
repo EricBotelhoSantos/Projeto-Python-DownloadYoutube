@@ -1,0 +1,13 @@
+# NexusSave — Dependências Unificadas
+# Instale com: pip install -r requirements.txt
+
+# Web (Flask Backend)
+flask
+yt-dlp
+
+# Desktop (CustomTkinter UI)
+customtkinter
+Pillow
+
+# Build (Empacotamento)
+pyinstaller

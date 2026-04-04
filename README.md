@@ -140,34 +140,40 @@ Ambas as interfaces compartilham o mesmo motor de extração **yt-dlp** e inclue
 ```
 📁 NexusSave/
 │
-├── 📁 site/                              # Aplicação Web (NexusSave)
+├── .gitignore                             # Filtros de versionamento
+├── README.md                              # Documentação do projeto
+├── requirements.txt                       # Dependências unificadas (todas)
+│
+├── 📁 desktop/                            # Aplicação Desktop (NexusTube Downloader)
+│   ├── 🐍 main.py                        # Entry point e construção da interface
+│   ├── 🐍 downloader.py                  # Lógica de download (yt-dlp)
+│   ├── 🐍 ffmpeg_manager.py              # Autoinstalação e verificação do FFmpeg
+│   └── 📁 assets/
+│       ├── 🎯 app_icon.ico               # Ícone do aplicativo
+│       └── 🖼️ bg.png                     # Background Glassmorphism (gerado)
+│
+├── 📁 web/                                # Aplicação Web (NexusSave)
 │   ├── 🐍 app.py                         # Backend Flask (API REST + servidor)
 │   ├── 📋 requirements.txt               # Dependências Python (flask, yt-dlp)
 │   ├── 📋 Procfile                        # Configuração de deploy
 │   ├── 📁 templates/
 │   │   └── 🌐 index.html                 # Template principal (Jinja2)
 │   └── 📁 static/
-│       ├── 📁 css/
-│       │   └── 🎨 style.css              # Estilos premium (Dark Mode + Glassmorphism)
+│       ├── 📁 css/style.css              # Estilos premium (Dark Mode + Glassmorphism)
 │       ├── 📁 js/
-│       │   ├── ⚙️ app.js                  # Lógica do frontend (download, conversão, i18n)
-│       │   └── 🌍 translations.js         # Sistema de tradução (PT-BR / EN)
-│       └── 📁 images/
-│           ├── 🇧🇷 flag-br.svg            # Bandeira do Brasil
-│           └── 🇺🇸 flag-us.svg            # Bandeira dos EUA
+│       │   ├── ⚙️ app.js                 # Lógica do frontend (download, conversão, i18n)
+│       │   └── 🌍 translations.js        # Sistema de tradução (PT-BR / EN)
+│       └── 📁 images/                    # Bandeiras SVG (BR / US)
 │
-├── 🐍 main.py                            # Aplicação Desktop (NexusTube Downloader)
-├── 🎨 generate_bg.py                     # Gerador de wallpaper Glassmorphism (1920×1080)
-├── 🖼️ bg.png                              # Imagem de fundo gerada
-├── 🎯 app_icon.ico                       # Ícone do aplicativo
-├── 📋 NexusSave.spec                     # PyInstaller config (aplicação web)
-├── 📋 NexusTubeDownloader.spec           # PyInstaller config (aplicação desktop)
-├── 📋 instalador_nexus.iss               # Script Inno Setup (instalador Windows)
-├── 🔧 start_server.bat                   # Script para iniciar o servidor web
+├── 📁 scripts/                            # Scripts utilitários
+│   ├── 🎨 generate_bg.py                 # Gerador de wallpaper (1920×1080)
+│   ├── 🔧 start_server.bat               # Iniciar servidor web
+│   └── 🔧 build.bat                      # Build unificado (ambos executáveis)
 │
-├── 📁 dist/                              # Executáveis compilados (.exe)
-├── 📁 build/                             # Arquivos temporários de build
-└── 📁 Instalador_Final/                  # Instaladores gerados pelo Inno Setup
+└── 📁 config/                             # Configurações de build
+    ├── 📋 nexussave.spec                  # PyInstaller config (web)
+    ├── 📋 nexustube_downloader.spec       # PyInstaller config (desktop)
+    └── 📋 instalador_nexus.iss            # Script Inno Setup (instalador Windows)
 ```
 
 ### Visão Geral da API REST (NexusSave Web)
@@ -206,28 +212,28 @@ python -m venv .venv
 # source .venv/bin/activate   # Linux/macOS
 
 # 3. Instale as dependências
-pip install flask yt-dlp
+pip install -r requirements.txt
 
 # 4. Inicie o servidor
-cd site
+cd web
 python app.py
 ```
 
 O servidor será iniciado em **http://localhost:5000**.
 
-> **Alternativa rápida (Windows):** Execute o arquivo `start_server.bat` na raiz do projeto.
+> **Alternativa rápida (Windows):** Execute `scripts\start_server.bat`.
 
 ### NexusTube Downloader (Interface Desktop)
 
 ```bash
 # 1. A partir da raiz do projeto (com o ambiente virtual ativo)
-pip install customtkinter yt-dlp Pillow
+pip install -r requirements.txt
 
 # 2. Gere a imagem de background (primeira execução)
-python generate_bg.py
+python scripts/generate_bg.py
 
 # 3. Execute a aplicação
-python main.py
+python desktop/main.py
 ```
 
 ---
@@ -250,7 +256,7 @@ python main.py
 
 ### Interface Desktop — YouTube
 
-1. Execute `main.py` ou o executável `NexusTubeDownloader.exe`
+1. Execute `desktop/main.py` ou o executável `NexusTubeDownloader.exe`
 2. Cole a URL do vídeo do YouTube no campo de entrada
 3. Clique em **BAIXAR VÍDEO**
 4. O vídeo será salvo automaticamente na pasta **Downloads** do usuário
@@ -286,7 +292,7 @@ https://youtu.be/dQw4w9WgXcQ
 ### NexusSave (Web — Executável Standalone)
 
 ```bash
-.venv\Scripts\pyinstaller NexusSave.spec --clean -y
+.venv\Scripts\pyinstaller config\nexussave.spec --clean -y
 ```
 
 Gera `dist/NexusSave.exe` — executável autônomo que embarca o servidor Flask, templates e assets estáticos.
@@ -294,7 +300,7 @@ Gera `dist/NexusSave.exe` — executável autônomo que embarca o servidor Flask
 ### NexusTube Downloader (Desktop)
 
 ```bash
-.venv\Scripts\pyinstaller NexusTubeDownloader.spec --clean -y
+.venv\Scripts\pyinstaller config\nexustube_downloader.spec --clean -y
 ```
 
 Gera `dist/NexusTubeDownloader.exe` com:

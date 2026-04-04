@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import threading
 import time
+import tempfile
 import platform
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_file, after_this_request
@@ -18,10 +19,14 @@ import urllib.request
 
 app = Flask(__name__)
 
-# Configurações
-BASE_DIR = Path(__file__).parent
-DOWNLOADS_DIR = BASE_DIR / "downloads"
-DOWNLOADS_DIR.mkdir(exist_ok=True)
+# Configurações - Pasta de Downloads do usuário
+user_downloads = os.path.expanduser('~/Downloads')
+if os.path.exists(user_downloads) and os.access(user_downloads, os.W_OK):
+    DOWNLOADS_DIR = Path(user_downloads)
+else:
+    DOWNLOADS_DIR = Path(os.path.expanduser('~'))
+    
+TEMP_DIR = Path(tempfile.gettempdir()) / 'nexussave'
 
 # FFmpeg paths
 if platform.system() == 'Windows':
@@ -422,9 +427,9 @@ def convert_video():
         return jsonify({'error': 'FFmpeg não encontrado', 'need_ffmpeg': True}), 400
 
     try:
-        # Salvar arquivo temporário
+        # Salvar arquivo temporário na pasta temp
         file_id = str(uuid.uuid4())[:8]
-        input_path = DOWNLOADS_DIR / f'{file_id}_input.mp4'
+        input_path = TEMP_DIR / f'{file_id}_input.mp4'
         output_path = DOWNLOADS_DIR / f'{file_id}_output.mp3'
 
         file.save(input_path)

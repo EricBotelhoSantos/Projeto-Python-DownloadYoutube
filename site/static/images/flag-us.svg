@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7410 3900">
+  <rect width="7410" height="3900" fill="#b22234"/>
+  <path d="M0 450h7410m0 600H0m0 600h7410m0 600H0m0 600h7410" stroke="#fff" stroke-width="300"/>
+  <rect width="2964" height="2100" fill="#3c3b6e"/>
+  <g fill="#fff">
+    <g id="s18">
+      <g id="s9">
+        <g id="s5">
+          <g id="s4">
+            <path id="s" d="M247 90l70 210-180-140h220l-180 140z"/>
+            <use href="#s" x="247" y="180"/>
+            <use href="#s" x="494"/>
+            <use href="#s" x="494" y="180"/>
+            <use href="#s" x="741"/>
+          </g>
+          <use href="#s4" x="494" y="180"/>
+        </g>
+        <use href="#s5" x="988"/>
+      </g>
+      <use href="#s9" y="360"/>
+    </g>
+    <use href="#s18" y="720"/>
+    <use href="#s18" y="1080"/>
+    <use href="#s18" y="1440"/>
+  </g>
+</svg>

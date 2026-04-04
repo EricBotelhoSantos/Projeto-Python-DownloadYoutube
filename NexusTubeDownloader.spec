@@ -8,9 +8,10 @@ a = Analysis(
     datas=[
         ('C:/Projetos/Projeto-Python-DownloadYoutube/.venv/Lib/site-packages/customtkinter', 'customtkinter/'),
         ('app_icon.ico', '.'),
-        ('bg.png', '.')
+        ('bg.png', '.'),
+        ('site', 'site'),
     ],
-    hiddenimports=[],
+    hiddenimports=['flask', 'yt_dlp'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

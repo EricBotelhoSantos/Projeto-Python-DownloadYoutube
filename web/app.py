@@ -18,22 +18,34 @@ import urllib.request
 
 app = Flask(__name__)
 
-# Configurações - Pasta de Downloads do usuário
-user_downloads = os.path.expanduser('~/Downloads')
-if os.path.exists(user_downloads) and os.access(user_downloads, os.W_OK):
-    DOWNLOADS_DIR = Path(user_downloads)
+# Determinar se estamos em ambiente de servidor (Docker/Render)
+IS_SERVER = os.environ.get('RENDER') or os.environ.get('DOCKER')
+
+# Configurações - Diretórios
+if IS_SERVER:
+    DOWNLOADS_DIR = Path('/tmp/nexussave/downloads')
+    TEMP_DIR = Path('/tmp/nexussave/temp')
 else:
-    DOWNLOADS_DIR = Path(os.path.expanduser('~'))
-    
-TEMP_DIR = Path(tempfile.gettempdir()) / 'nexussave'
+    # Local (Windows/macOS)
+    user_downloads = os.path.expanduser('~/Downloads')
+    if os.path.exists(user_downloads) and os.access(user_downloads, os.W_OK):
+        DOWNLOADS_DIR = Path(user_downloads)
+    else:
+        DOWNLOADS_DIR = Path(os.path.expanduser('~'))
+    TEMP_DIR = Path(tempfile.gettempdir()) / 'nexussave'
+
+# Criar diretórios se não existirem
+DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
+TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 # FFmpeg paths
 if platform.system() == 'Windows':
     FFMPEG_DIR = Path(os.environ.get('APPDATA', os.path.expanduser('~'))) / 'NexusSave' / 'ffmpeg'
+    FFMPEG_EXE = FFMPEG_DIR / 'ffmpeg.exe'
 else:
-    FFMPEG_DIR = Path.home() / '.nexussave' / 'ffmpeg'
-
-FFMPEG_EXE = FFMPEG_DIR / 'ffmpeg.exe' if platform.system() == 'Windows' else FFMPEG_DIR / 'ffmpeg'
+    # No Linux/Docker, esperamos que o ffmpeg esteja no PATH do sistema
+    FFMPEG_DIR = Path('/usr/bin')
+    FFMPEG_EXE = Path('ffmpeg')
 
 # Status de instalação do FFmpeg
 ffmpeg_installing = False
@@ -97,8 +109,12 @@ def get_ffmpeg_path():
 
 
 def download_ffmpeg():
-    """Baixa e instala o FFmpeg automaticamente (Windows)"""
+    """Baixa e instala o FFmpeg automaticamente (Apenas Windows)"""
     global ffmpeg_installing
+
+    if platform.system() != 'Windows':
+        print("Instalação automática do FFmpeg só é necessária no Windows.")
+        return False
 
     ffmpeg_installing = True
 

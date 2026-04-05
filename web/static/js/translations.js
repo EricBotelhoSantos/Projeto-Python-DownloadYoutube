@@ -43,6 +43,9 @@ const translations = {
         errorUnsupported: "Plataforma não suportada. Use TikTok, Twitter ou Instagram.",
         errorDownload: "Erro ao baixar o vídeo. Tente novamente.",
         errorConvert: "Erro ao converter o arquivo. Tente novamente.",
+        errorServerTimeout:
+            "O servidor demorou demais ou ficou indisponível (limite de tempo). Tente um arquivo MP4 menor ou novamente mais tarde.",
+        errorServerUnexpected: "O servidor enviou uma resposta inesperada. Tente novamente.",
         errorNoFile: "Selecione um arquivo MP4.",
         successDownload: "Download concluído!",
         successConvert: "Conversão concluída!",
@@ -106,6 +109,9 @@ const translations = {
         errorUnsupported: "Unsupported platform. Use TikTok, Twitter or Instagram.",
         errorDownload: "Error downloading video. Please try again.",
         errorConvert: "Error converting file. Please try again.",
+        errorServerTimeout:
+            "The server took too long or was unavailable (time limit). Try a smaller MP4 or again later.",
+        errorServerUnexpected: "The server returned an unexpected response. Please try again.",
         errorNoFile: "Please select an MP4 file.",
         successDownload: "Download complete!",
         successConvert: "Conversion complete!",

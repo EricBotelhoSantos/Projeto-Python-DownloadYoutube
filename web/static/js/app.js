@@ -52,6 +52,51 @@ const elements = {
 let currentVideoInfo = null;
 
 /**
+ * Corpo de erro da API: JSON ou página HTML (502/504 do proxy, ex. Render).
+ */
+async function readApiErrorBody(response) {
+    const text = await response.text();
+    const trimmed = text.trim();
+    if (!trimmed) {
+        return {};
+    }
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        const low = trimmed.toLowerCase();
+        if (low.startsWith('<!doctype') || low.startsWith('<html')) {
+            if (response.status === 504 || response.status === 502) {
+                return { error: t('errorServerTimeout') };
+            }
+            return { error: t('errorServerUnexpected') };
+        }
+        return { error: trimmed.slice(0, 280) };
+    }
+}
+
+/**
+ * Parse JSON da resposta; em erro com HTML, mensagem amigável.
+ */
+function parseJsonResponseBody(text, response, fallbackKey) {
+    try {
+        return JSON.parse(text);
+    } catch {
+        if (!response.ok) {
+            const low = text.trim().toLowerCase();
+            if (low.startsWith('<!doctype') || low.startsWith('<html')) {
+                if (response.status === 504 || response.status === 502) {
+                    throw new Error(t('errorServerTimeout'));
+                }
+                throw new Error(t('errorServerUnexpected'));
+            }
+            const snippet = text.trim().slice(0, 200);
+            throw new Error(snippet || t(fallbackKey));
+        }
+        throw new Error(t(fallbackKey));
+    }
+}
+
+/**
  * Initialize the application
  */
 function init() {
@@ -182,7 +227,8 @@ async function fetchVideoInfo() {
             body: JSON.stringify({ url })
         });
 
-        const data = await response.json();
+        const text = await response.text();
+        const data = parseJsonResponseBody(text, response, 'errorInvalidUrl');
 
         if (!response.ok) {
             throw new Error(data.error || t('errorInvalidUrl'));
@@ -251,7 +297,7 @@ async function downloadVideo() {
         });
 
         if (!response.ok) {
-            const data = await response.json();
+            const data = await readApiErrorBody(response);
             throw new Error(data.error || t('errorDownload'));
         }
 
@@ -379,11 +425,9 @@ async function convertFile() {
             body: formData
         });
 
-        // Se houver erro, tentar parsear como JSON
         if (!response.ok) {
-            const data = await response.json();
+            const data = await readApiErrorBody(response);
 
-            // Verificar se precisa instalar FFmpeg
             if (data.need_ffmpeg) {
                 showFFmpegModal();
                 return;

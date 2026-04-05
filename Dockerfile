@@ -25,6 +25,6 @@ COPY web/ ./web/
 # Set working directory to the web folder for execution
 WORKDIR /app/web
 
-# Command to run the app using Gunicorn
+# Render (e outros PaaS) definem a variável PORT — não fixar 10000
 # Aumentamos o timeout para 120s para permitir downloads de vídeos maiores
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:10000", "--timeout", "120"]
+CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-10000} --timeout 120"]

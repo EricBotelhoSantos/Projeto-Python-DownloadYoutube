@@ -48,6 +48,12 @@ def _criar_hook_progresso(progress_bar, status_label):
     return atualizar_progresso
 
 
+def _listar_arquivos_extensao(diretorio, extensao):
+    """Lista arquivos com uma determinada extensão no diretório."""
+    padrao = os.path.join(diretorio, extensao)
+    return set(glob.glob(padrao))
+
+
 def executar_script(url, status_label, progress_bar, download_btn):
     """Executa o download do vídeo do YouTube com qualidade máxima."""
     caminho_downloads = os.path.join(os.path.expanduser('~'), 'Downloads')
@@ -60,15 +66,23 @@ def executar_script(url, status_label, progress_bar, download_btn):
     hook = _criar_hook_progresso(progress_bar, status_label)
 
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best',
         'merge_output_format': 'mp4',
         'outtmpl': os.path.join(caminho_downloads, '%(title)s.%(ext)s'),
         'nopart': True,
         'progress_hooks': [hook],
-        'ffmpeg_location': ffmpeg_dir
+        'ffmpeg_location': ffmpeg_dir,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['web', 'android', 'ios']
+            }
+        }
     }
 
     try:
+        # Snapshot de arquivos .m4a antes do download
+        m4a_antes = _listar_arquivos_extensao(caminho_downloads, '*.m4a')
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             status_label.configure(
                 text="Conectando aos servidores do Nexus...",
@@ -83,9 +97,10 @@ def executar_script(url, status_label, progress_bar, download_btn):
             )
             time.sleep(2)
 
-            # Limpar arquivos temporários de áudio
-            caminho_limpeza = os.path.join(caminho_downloads, "*.m4a")
-            for temp_audio in glob.glob(caminho_limpeza):
+            # Limpar apenas arquivos temporários de audio criados NESTE download
+            m4a_depois = _listar_arquivos_extensao(caminho_downloads, '*.m4a')
+            m4a_novos = m4a_depois - m4a_antes
+            for temp_audio in m4a_novos:
                 try:
                     os.remove(temp_audio)
                 except OSError:

@@ -68,8 +68,7 @@ def baixar_ffmpeg(status_label, progress_bar, download_btn):
     progress_bar.set(0)
 
     url_ffmpeg = (
-        "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/"
-        "ffmpeg-master-latest-win64-gpl.zip"
+        "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
     )
     zip_path = os.path.join(exe_dir, "ffmpeg.zip")
 
@@ -96,6 +95,17 @@ def baixar_ffmpeg(status_label, progress_bar, download_btn):
                 if membro.endswith('ffmpeg.exe'):
                     fonte = zip_ref.open(membro)
                     target = open(os.path.join(exe_dir, 'ffmpeg.exe'), 'wb')
+                    with fonte, target:
+                        target.write(fonte.read())
+                    # Extraia também ffprobe.exe para diagnóstico
+                    break
+
+            # Tentar extrair ffprobe.exe também
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            for membro in zip_ref.namelist():
+                if membro.endswith('ffprobe.exe'):
+                    fonte = zip_ref.open(membro)
+                    target = open(os.path.join(exe_dir, 'ffprobe.exe'), 'wb')
                     with fonte, target:
                         target.write(fonte.read())
                     break

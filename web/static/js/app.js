@@ -393,13 +393,22 @@ function removeFile() {
     elements.fileInput.value = '';
     elements.selectedFile.classList.add('hidden');
     elements.dropzone.classList.remove('hidden');
-    elements.convertBtn.classList.add('hidden');
+    elements.convertBtn.classList.remove('hidden');
     elements.converterMessage.classList.add('hidden');
+
+    // Limpar qualquer job/polling ativo
+    stopConvertPolling();
+
+    // Remover botões de download que foram adicionados dinamicamente
+    elements.converterMessage.querySelectorAll('a.btn').forEach(a => a.remove());
 }
 
 /**
- * Convert file
+ * Conversion job — modelo assíncrono com polling
  */
+let currentJobId = null;
+let convertPollingInterval = null;
+
 async function convertFile() {
     const file = elements.fileInput.files[0];
     if (!file) {
@@ -416,55 +425,107 @@ async function convertFile() {
     try {
         elements.convertBtn.disabled = true;
         elements.convertProgress.classList.remove('hidden');
+        showMessage('converter', '', '');
 
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('/api/convert', {
+        // Passo 1: Upload do arquivo e criação do job
+        const startResponse = await fetch('/api/convert', {
             method: 'POST',
             body: formData
         });
 
-        if (!response.ok) {
-            const data = await readApiErrorBody(response);
-
+        if (!startResponse.ok) {
+            const data = await readApiErrorBody(startResponse);
             if (data.need_ffmpeg) {
                 showFFmpegModal();
                 return;
             }
-
             throw new Error(data.error || t('errorConvert'));
         }
 
-        // Sucesso - processar como blob
-        const blob = await response.blob();
+        const startData = await startResponse.json();
+        currentJobId = startData.job_id;
 
-        // Extrair nome do arquivo
-        const disposition = response.headers.get('Content-Disposition');
-        let filename = 'audio.mp3';
-        if (disposition) {
-            const match = disposition.match(/filename\*?=['"]?(?:UTF-\d['"]*)?([^'";\s]+)/i);
-            if (match) filename = decodeURIComponent(match[1]);
-        }
-
-        // Download do arquivo
-        const downloadUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(downloadUrl);
-
-        showMessage('converter', t('successConvert'), 'success');
+        // Passo 2: Polling do status da conversão
+        startConvertPolling();
 
     } catch (error) {
         showMessage('converter', error.message, 'error');
-    } finally {
         elements.convertBtn.disabled = false;
         elements.convertProgress.classList.add('hidden');
     }
+}
+
+function startConvertPolling() {
+    if (convertPollingInterval) clearInterval(convertPollingInterval);
+
+    let pollCount = 0;
+    const maxPolls = 720; // 1 hora (720 × 5s)
+
+    convertPollingInterval = setInterval(async () => {
+        pollCount++;
+        if (pollCount > maxPolls) {
+            stopConvertPolling();
+            showMessage('converter', t('errorConvert'), 'error');
+            elements.convertBtn.disabled = false;
+            elements.convertProgress.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const statusResponse = await fetch(`/api/convert/status/${currentJobId}`);
+            const statusData = await statusResponse.json();
+
+            if (statusData.status === 'done') {
+                stopConvertPolling();
+                elements.convertProgress.classList.add('hidden');
+                // Mostrar botão de download
+                elements.convertBtn.classList.add('hidden');
+                const downloadLink = document.createElement('a');
+                downloadLink.href = `/api/convert/download/${currentJobId}`;
+                downloadLink.download = `${statusData.filename}.mp3`;
+                downloadLink.className = 'btn btn-primary btn-large';
+                downloadLink.innerHTML = `
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Baixar MP3
+                `;
+                downloadLink.style.marginTop = '1rem';
+                // Inserir antes do converter-message
+                elements.converterMessage.parentNode.insertBefore(downloadLink, elements.converterMessage);
+                showMessage('converter', t('successConvert'), 'success');
+                return;
+            }
+
+            if (statusData.status === 'error') {
+                stopConvertPolling();
+                showMessage('converter', statusData.error || t('errorConvert'), 'error');
+                elements.convertBtn.disabled = false;
+                elements.convertProgress.classList.add('hidden');
+                return;
+            }
+
+            // Status 'pending' ou 'converting' — continuar polling
+            // Atualizar texto de progresso
+            document.getElementById('convert-text').textContent = 'Convertendo... aguarde';
+
+        } catch (error) {
+            console.error('Error polling convert status:', error);
+        }
+    }, 5000);
+}
+
+function stopConvertPolling() {
+    if (convertPollingInterval) {
+        clearInterval(convertPollingInterval);
+        convertPollingInterval = null;
+    }
+    currentJobId = null;
 }
 
 /**

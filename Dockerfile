@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
-ENV RENDER=true
+ENV DEPLOYED=true
 ENV PYTHONUNBUFFERED=1
 
 # Set the working directory
@@ -27,4 +27,4 @@ WORKDIR /app/web
 
 # Render (e outros PaaS) definem a variável PORT — não fixar 10000
 # Aumentamos o timeout para 120s para permitir downloads de vídeos maiores
-CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-10000} --timeout 120"]
+CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-10000} --timeout 720 --workers 2"]

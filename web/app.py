@@ -362,6 +362,12 @@ def download_video():
             'no_warnings': True,
             'outtmpl': str(DOWNLOADS_DIR / f'{file_id}_%(title).50s.%(ext)s'),
             'format': 'best',
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['web', 'android', 'ios']
+                }
+            },
+            'http_timeout': 60,
         }
 
         # TikTok sem marca d'água
@@ -371,16 +377,19 @@ def download_video():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
 
+            if not info:
+                return jsonify({'error': 'Não foi possível processar o vídeo'}), 500
+
             # Obter título do info (mais confiável)
-            video_title = (info.get('title') or '') or ''
-            
+            video_title = info.get('title') or ''
+
             if not video_title or video_title.lower().startswith('video by'):
                 description = info.get('description', '')
                 if description:
                     video_title = description.split('\n')[0][:100]
                 if not video_title or video_title.lower().startswith('video by'):
                     video_title = f'video_{platform}_{file_id}'
-            
+
             # Sanitizar título para nome de arquivo
             safe_title = re.sub(r'[^\w\s-]', '', video_title)[:50].strip()
             if not safe_title:
@@ -450,14 +459,21 @@ def convert_video():
         result = subprocess.run(
             [ffmpeg_cmd, '-i', str(input_path), '-vn', '-acodec', 'libmp3lame', '-q:a', '2', str(output_path)],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=300  # 5 min max para conversão
         )
 
         # Limpar input
         if input_path.exists():
             input_path.unlink()
 
-        if not output_path.exists():
+        # Verificar retorno do FFmpeg
+        if result.returncode != 0:
+            error_detail = result.stderr.strip()[:200] if result.stderr else 'Erro desconhecido'
+            print(f'[ERROR] FFmpeg convert: {error_detail}')
+            return jsonify({'error': f'Falha na conversão: {error_detail}'}), 500
+
+        if not output_path.exists() or output_path.stat().st_size == 0:
             return jsonify({'error': 'Falha na conversão'}), 500
 
         # Agendar limpeza do output

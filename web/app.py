@@ -19,8 +19,8 @@ import urllib.request
 
 app = Flask(__name__)
 
-# Determinar se estamos em ambiente de servidor (Docker/Render)
-IS_SERVER = os.environ.get('RENDER') or os.environ.get('DOCKER')
+# Determinar se estamos em ambiente de servidor (Docker/Render/Cloud Run)
+IS_SERVER = os.environ.get('RENDER') or os.environ.get('DOCKER') or os.environ.get('DEPLOYED')
 
 # Configurações - Diretórios
 if IS_SERVER:
@@ -58,28 +58,34 @@ ffmpeg_installing = False
 # Limite de upload: 2GB (suporta arquivos MP4 de longa duração)
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 
-# Jobs de conversão (armazenados em memória)
-# Estrutura: {job_id: {'status': 'pending'|'converting'|'done'|'error', 'output_path': Path, 'error': str, 'progress': int}}
-convert_jobs: dict[str, dict] = {}
+# Jobs de conversão com persistência em disco (sobrevivem à rotação de workers)
+# Metadados: CONVERT_JOBS_DIR/<job_id>.json
+# Input: CONVERT_DIR/<job_id>_input.mp4
+# Output: CONVERT_DIR/<job_id>_output.mp3
 
-# Limpeza periódica de jobs antigos
-def limpar_jobs_antigos():
-    """Remove jobs finalizados com mais de 1 hora do armazenamento."""
-    while True:
-        time.sleep(3600)
-        for job_id in list(convert_jobs.keys()):
-            job = convert_jobs[job_id]
-            if job['status'] in ('done', 'error') and job.get('created_at', 0) < time.time() - 3600:
-                # Remove arquivos temporários
-                for key in ('input_path', 'output_path'):
-                    p = job.get(key)
-                    if p and p.exists():
-                        try:
-                            p.unlink()
-                        except Exception:
-                            pass
-                del convert_jobs[job_id]
-threading.Thread(target=limpar_jobs_antigos, daemon=True).start()
+import json
+
+CONVERT_JOBS_DIR = CONVERT_DIR / 'meta'
+CONVERT_JOBS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _save_job_meta(job_id: str, data: dict):
+    """Persiste metadados de um job em disco."""
+    path = CONVERT_JOBS_DIR / f'{job_id}.json'
+    tmp = path.with_suffix('.tmp')
+    tmp.write_text(json.dumps(data), encoding='utf-8')
+    tmp.rename(path)
+
+
+def _load_job_meta(job_id: str) -> dict | None:
+    """Carrega metadados de um job do disco."""
+    path = CONVERT_JOBS_DIR / f'{job_id}.json'
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding='utf-8'))
+    except Exception:
+        return None
 
 # Padrões de URL por plataforma
 PLATFORM_PATTERNS = {
@@ -455,7 +461,7 @@ def download_video():
 
 @app.route('/api/convert', methods=['POST'])
 def convert_video():
-    """Inicia conversão MP4→MP3 em background (modelo assíncrono)."""
+    """Inicia conversão MP4→MP3 em background com persistência em disco."""
     if 'file' not in request.files:
         return jsonify({'error': 'Nenhum arquivo enviado'}), 400
 
@@ -473,38 +479,69 @@ def convert_video():
     if not check_ffmpeg():
         return jsonify({'error': 'FFmpeg não encontrado', 'need_ffmpeg': True}), 400
 
+    # Verificar espaço em disco mínimo (200 MB livres)
     try:
-        # Criar job
+        disk = shutil.disk_usage(str(CONVERT_DIR))
+        if disk.free < 200 * 1024 * 1024:
+            return jsonify({'error': 'Espaço em disco insuficiente para conversão'}), 500
+    except Exception:
+        pass  # Não consegue determinar espaço — prosseguir
+
+    try:
         job_id = str(uuid.uuid4())
         input_path = CONVERT_DIR / f'{job_id}_input.mp4'
         output_path = CONVERT_DIR / f'{job_id}_output.mp3'
 
         file.save(input_path)
+        print(f'[CONVERT] Upload recebido: {filename} ({input_path.stat().st_size / 1024 / 1024:.1f} MB) job={job_id}')
 
-        # Registrar job
-        convert_jobs[job_id] = {
+        # Salvar job em disco
+        _save_job_meta(job_id, {
             'status': 'pending',
-            'progress': 0,
-            'input_path': input_path,
-            'output_path': output_path,
             'original_name': filename,
             'error': None,
             'created_at': time.time(),
-        }
+        })
 
         def run_conversion():
-            job = convert_jobs[job_id]
             ffmpeg_cmd = get_ffmpeg_path()
+            input_size = input_path.stat().st_size if input_path.exists() else 0
             try:
-                job['status'] = 'converting'
-                job['progress'] = 1
+                print(f'[CONVERT] Iniciando FFmpeg ({input_size / 1024 / 1024:.1f} MB): {ffmpeg_cmd}')
 
-                result = subprocess.run(
-                    [ffmpeg_cmd, '-i', str(input_path), '-vn', '-acodec', 'libmp3lame', '-q:a', '2', str(output_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=3600  # 1 hora max
-                )
+                # Usar codec mais eficiente e bitrate fixo para arquivos grandes
+                # -ab 192k é melhor que -q:a 2 para longas durações (menor uso de CPU/memória)
+                # Redirecionar stderr para arquivo temporário (evita OOM em vídeos longos)
+                stderr_file = tempfile.NamedTemporaryFile(delete=False, suffix='.log', dir=TEMP_DIR)
+                try:
+                    result = subprocess.run(
+                        [
+                            ffmpeg_cmd, '-y',
+                            '-i', str(input_path),
+                            '-vn',                          # sem vídeo
+                            '-acodec', 'libmp3lame',        # codec MP3
+                            '-ab', '192k',                   # bitrate fixo 192kbps
+                            '-ar', '44100',                  # sample rate
+                            '-ac', '2',                      # stereo
+                            '-threads', '2',                  # threads limitadas
+                            str(output_path)
+                        ],
+                        stdout=subprocess.DEVNULL,
+                        stderr=stderr_file,
+                        timeout=7200  # 2 horas para arquivos grandes
+                    )
+                    # Ler stderr apenas se houve erro
+                    if result.returncode != 0:
+                        stderr_file.seek(0)
+                        error_detail = stderr_file.read().decode('utf-8', errors='replace').strip()[-300:]
+                    else:
+                        error_detail = ''
+                finally:
+                    stderr_file.close()
+                    try:
+                        os.unlink(stderr_file.name)
+                    except Exception:
+                        pass
 
                 # Limpar input
                 if input_path.exists():
@@ -513,85 +550,119 @@ def convert_video():
                     except Exception:
                         pass
 
+                print(f'[CONVERT] FFmpeg return_code={result.returncode}')
+
                 if result.returncode != 0:
-                    error_detail = result.stderr.strip()[:200] if result.stderr else 'Erro desconhecido'
-                    print(f'[ERROR] FFmpeg convert ({job_id}): {error_detail}')
-                    job['status'] = 'error'
-                    job['error'] = error_detail
+                    error_detail = error_detail or 'Erro desconhecido'
+                    print(f'[CONVERT] ERRO FFmpeg: {error_detail}')
+                    _save_job_meta(job_id, {
+                        'status': 'error',
+                        'original_name': filename,
+                        'error': error_detail,
+                        'created_at': time.time(),
+                    })
                     return
 
-                if not output_path.exists() or output_path.stat().st_size == 0:
-                    job['status'] = 'error'
-                    job['error'] = 'Falha na conversão: arquivo vazio'
+                size = output_path.stat().st_size if output_path.exists() else 0
+                print(f'[CONVERT] Output: {output_path} ({size / 1024 / 1024:.1f} MB)')
+
+                if size == 0:
+                    _save_job_meta(job_id, {
+                        'status': 'error',
+                        'original_name': filename,
+                        'error': 'FFmpeg gerou arquivo vazio',
+                        'created_at': time.time(),
+                    })
                     return
 
-                job['status'] = 'done'
-                job['progress'] = 100
+                _save_job_meta(job_id, {
+                    'status': 'done',
+                    'original_name': filename,
+                    'error': None,
+                    'created_at': time.time(),
+                })
+                print(f'[CONVERT] Conversão concluída: {job_id}')
 
             except subprocess.TimeoutExpired:
-                job['status'] = 'error'
-                job['error'] = 'Tempo de conversão excedido (1h)'
+                _save_job_meta(job_id, {
+                    'status': 'error',
+                    'original_name': filename,
+                    'error': 'Tempo de conversão excedido (1h)',
+                    'created_at': time.time(),
+                })
             except Exception as e:
-                job['status'] = 'error'
-                job['error'] = str(e)
+                _save_job_meta(job_id, {
+                    'status': 'error',
+                    'original_name': filename,
+                    'error': str(e),
+                    'created_at': time.time(),
+                })
 
         threading.Thread(target=run_conversion, daemon=True).start()
 
         return jsonify({'job_id': job_id, 'status': 'pending'})
 
     except Exception as e:
+        print(f'[CONVERT] Erro fatal: {e}')
         return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/convert/status/<job_id>', methods=['GET'])
 def convert_status(job_id):
-    """Retorna o status de um job de conversão."""
-    job = convert_jobs.get(job_id)
+    """Retorna o status de um job de conversão (lem do disco)."""
+    job = _load_job_meta(job_id)
     if not job:
         return jsonify({'error': 'Job não encontrado'}), 404
 
     response = {
-        'status': job['status'],
-        'progress': job['progress'],
+        'status': job.get('status', 'error'),
+        'created_at': job.get('created_at'),
     }
-    if job['status'] == 'error':
-        response['error'] = job['error']
-    if job['status'] == 'done':
-        response['filename'] = re.sub(r'[^\w\s-]', '', job['original_name'][:-4])[:50] if job.get('original_name') else 'audio'
+    if job.get('status') == 'error':
+        response['error'] = job.get('error') or 'Erro desconhecido'
+    if job.get('status') == 'done':
+        raw_name = job.get('original_name', 'audio')
+        if raw_name and raw_name.lower().endswith('.mp4'):
+            safe_name = re.sub(r'[^\w\s-]', '', raw_name[:-4])[:50].strip()
+        else:
+            safe_name = re.sub(r'[^\w\s-]', '', str(raw_name))[:50].strip()
+        response['filename'] = safe_name or 'audio'
+
+        # Garantir que o output existe
+        output_path = CONVERT_DIR / f'{job_id}_output.mp3'
+        if not output_path.exists():
+            response['status'] = 'error'
+            response['error'] = 'Arquivo MP3 não encontrado no servidor'
     return jsonify(response)
 
 
 @app.route('/api/convert/download/<job_id>', methods=['GET'])
 def convert_download(job_id):
     """Baixa o arquivo MP3 convertido."""
-    job = convert_jobs.get(job_id)
+    job = _load_job_meta(job_id)
     if not job:
         return jsonify({'error': 'Job não encontrado'}), 404
 
-    if job['status'] != 'done':
-        return jsonify({'error': 'Conversão ainda não está pronta'}), 400
+    if job.get('status') != 'done':
+        return jsonify({'error': f'Conversão ainda não está pronta (status: {job.get("status")})'}), 400
 
-    output_path = job['output_path']
+    output_path = CONVERT_DIR / f'{job_id}_output.mp3'
     if not output_path.exists():
-        return jsonify({'error': 'Arquivo MP3 não encontrado'}), 500
+        return jsonify({'error': 'Arquivo MP3 não encontrado no servidor'}), 500
 
-    safe_name = re.sub(r'[^\w\s-]', '', job['original_name'][:-4])[:50] if job.get('original_name') else 'audio'
+    raw_name = job.get('original_name', 'audio')
+    if raw_name and raw_name.lower().endswith('.mp4'):
+        safe_name = re.sub(r'[^\w\s-]', '', raw_name[:-4])[:50].strip()
+    else:
+        safe_name = re.sub(r'[^\w\s-]', '', str(raw_name))[:50].strip()
 
     # Agendar limpeza
     cleanup_file(output_path)
 
-    # Remover job após download (com delay para evitar race condition)
-    def remove_job():
-        time.sleep(60)
-        if job_id in convert_jobs:
-            job = convert_jobs.pop(job_id, None)
-
-    threading.Thread(target=remove_job, daemon=True).start()
-
     return send_file(
         output_path,
         as_attachment=True,
-        download_name=f'{safe_name}.mp3',
+        download_name=f'{safe_name or "audio"}.mp3',
         mimetype='audio/mpeg',
     )
 

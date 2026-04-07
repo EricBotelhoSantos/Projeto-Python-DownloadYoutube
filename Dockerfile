@@ -27,4 +27,4 @@ WORKDIR /app/web
 
 # Render (e outros PaaS) definem a variável PORT — não fixar 10000
 # Aumentamos o timeout para 120s para permitir downloads de vídeos maiores
-CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-10000} --timeout 720 --workers 2"]
+CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-10000} --timeout 1200 --workers 2"]

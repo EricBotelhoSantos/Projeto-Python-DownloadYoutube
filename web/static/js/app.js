@@ -400,7 +400,7 @@ function removeFile() {
     stopConvertPolling();
 
     // Remover botões de download que foram adicionados dinamicamente
-    elements.converterMessage.querySelectorAll('a.btn').forEach(a => a.remove());
+    elements.converterMessage.parentNode.querySelectorAll('.convert-download-btn').forEach(el => el.remove());
 }
 
 /**
@@ -483,11 +483,9 @@ function startConvertPolling() {
                 elements.convertProgress.classList.add('hidden');
                 // Mostrar botão de download
                 elements.convertBtn.classList.add('hidden');
-                const downloadLink = document.createElement('a');
-                downloadLink.href = `/api/convert/download/${currentJobId}`;
-                downloadLink.download = `${statusData.filename}.mp3`;
-                downloadLink.className = 'btn btn-primary btn-large';
-                downloadLink.innerHTML = `
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'btn btn-primary btn-large convert-download-btn';
+                downloadBtn.innerHTML = `
                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="7 10 12 15 17 10"/>
@@ -495,9 +493,39 @@ function startConvertPolling() {
                     </svg>
                     Baixar MP3
                 `;
-                downloadLink.style.marginTop = '1rem';
+                downloadBtn.style.marginTop = '1rem';
+                downloadBtn.onclick = async function() {
+                    downloadBtn.disabled = true;
+                    downloadBtn.textContent = 'Preparando download...';
+                    try {
+                        const dlResponse = await fetch(`/api/convert/download/${currentJobId}`);
+                        if (!dlResponse.ok) {
+                            const errData = await readApiErrorBody(dlResponse);
+                            throw new Error(errData.error || 'Erro ao baixar MP3');
+                        }
+                        const contentType = dlResponse.headers.get('Content-Type');
+                        if (contentType && contentType.includes('json')) {
+                            const errData = await dlResponse.json();
+                            throw new Error(errData.error || 'Erro ao baixar MP3');
+                        }
+                        const blob = await dlResponse.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${statusData.filename}.mp3`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    } catch (err) {
+                        showMessage('converter', err.message, 'error');
+                        downloadBtn.disabled = false;
+                        downloadBtn.innerHTML = `Re-tentar Download`;
+                        return;
+                    }
+                };
                 // Inserir antes do converter-message
-                elements.converterMessage.parentNode.insertBefore(downloadLink, elements.converterMessage);
+                elements.converterMessage.parentNode.insertBefore(downloadBtn, elements.converterMessage);
                 showMessage('converter', t('successConvert'), 'success');
                 return;
             }

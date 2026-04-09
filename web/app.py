@@ -491,9 +491,7 @@ def convert_video():
         input_path = CONVERT_DIR / f'{job_id}_input.mp4'
         output_path = CONVERT_DIR / f'{job_id}_output.mp3'
 
-        file.save(input_path)
-        print(f'[CONVERT] Upload recebido: {filename} ({input_path.stat().st_size / 1024 / 1024:.1f} MB) job={job_id}')
-
+        file.save(str(input_path))
         # Salvar job em disco
         _save_job_meta(job_id, {
             'status': 'pending',
@@ -604,7 +602,17 @@ def convert_video():
         return jsonify({'job_id': job_id, 'status': 'pending'})
 
     except Exception as e:
+        import traceback, sys
+        trace_text = traceback.format_exc()
+        try:
+            with open('500_debug.txt', 'w', encoding='utf-8') as f:
+                f.write(trace_text)
+                f.write("\n")
+                f.write(str(e))
+        except:
+            pass
         print(f'[CONVERT] Erro fatal: {e}')
+        sys.stdout.flush()
         return jsonify({'error': str(e)}), 500
 
 
@@ -673,4 +681,4 @@ port = int(os.environ.get('PORT', 5000))
 if __name__ == '__main__':
     print("NexusSave Backend iniciando...")
     print("Downloads:", DOWNLOADS_DIR)
-    app.run(debug=False, host='0.0.0.0', port=port, use_reloader=False)
+    app.run(debug=True, host='0.0.0.0', port=port, use_reloader=False)

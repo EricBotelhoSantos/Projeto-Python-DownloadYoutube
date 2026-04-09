@@ -398,6 +398,7 @@ function removeFile() {
 
     // Limpar qualquer job/polling ativo
     stopConvertPolling();
+    currentJobId = null;
 
     // Remover botões de download que foram adicionados dinamicamente
     elements.converterMessage.parentNode.querySelectorAll('.convert-download-btn').forEach(el => el.remove());
@@ -563,6 +564,7 @@ function startConvertPolling() {
                 // Inserir antes do converter-message
                 elements.converterMessage.parentNode.insertBefore(downloadBtn, elements.converterMessage);
                 showMessage('converter', t('successConvert'), 'success');
+                downloadBtn.click(); // Iniciar download automaticamente
                 return;
             }
 
@@ -588,7 +590,6 @@ function stopConvertPolling() {
         clearInterval(convertPollingInterval);
         convertPollingInterval = null;
     }
-    currentJobId = null;
 }
 
 /**

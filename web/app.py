@@ -71,10 +71,9 @@ CONVERT_JOBS_DIR.mkdir(parents=True, exist_ok=True)
 
 def _save_job_meta(job_id: str, data: dict):
     """Persiste metadados de um job em disco."""
-    path = CONVERT_JOBS_DIR / f'{job_id}.json'
-    tmp = path.with_suffix('.tmp')
-    tmp.write_text(json.dumps(data), encoding='utf-8')
-    tmp.rename(path)
+    filepath = str(CONVERT_JOBS_DIR / f'{job_id}.json')
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(json.dumps(data))
 
 
 def _load_job_meta(job_id: str) -> dict | None:
@@ -509,21 +508,19 @@ def convert_video():
             try:
                 print(f'[CONVERT] Iniciando FFmpeg ({input_size / 1024 / 1024:.1f} MB): {ffmpeg_cmd}')
 
-                # Usar codec mais eficiente e bitrate fixo para arquivos grandes
-                # -ab 192k é melhor que -q:a 2 para longas durações (menor uso de CPU/memória)
-                # Redirecionar stderr para arquivo temporário (evita OOM em vídeos longos)
-                stderr_file = tempfile.NamedTemporaryFile(delete=False, suffix='.log', dir=TEMP_DIR)
-                try:
+                # VBR (-q:a 2) é ~2-3x mais rápido que CBR com qualidade similar
+                # Sem limite de threads: FFmpeg usa todos os cores disponíveis
+                stderr_log = TEMP_DIR / f'{job_id}_ffmpeg.log'
+                with open(str(stderr_log), 'w+b') as stderr_file:
                     result = subprocess.run(
                         [
                             ffmpeg_cmd, '-y',
                             '-i', str(input_path),
                             '-vn',                          # sem vídeo
                             '-acodec', 'libmp3lame',        # codec MP3
-                            '-ab', '192k',                   # bitrate fixo 192kbps
+                            '-q:a', '2',                     # VBR qualidade 2 (~190kbps, mais rápido)
                             '-ar', '44100',                  # sample rate
                             '-ac', '2',                      # stereo
-                            '-threads', '2',                  # threads limitadas
                             str(output_path)
                         ],
                         stdout=subprocess.DEVNULL,
@@ -536,12 +533,12 @@ def convert_video():
                         error_detail = stderr_file.read().decode('utf-8', errors='replace').strip()[-300:]
                     else:
                         error_detail = ''
-                finally:
-                    stderr_file.close()
-                    try:
-                        os.unlink(stderr_file.name)
-                    except Exception:
-                        pass
+
+                # Limpar log do ffmpeg
+                try:
+                    stderr_log.unlink()
+                except Exception:
+                    pass
 
                 # Limpar input
                 if input_path.exists():
@@ -587,16 +584,20 @@ def convert_video():
                 _save_job_meta(job_id, {
                     'status': 'error',
                     'original_name': filename,
-                    'error': 'Tempo de conversão excedido (1h)',
+                    'error': 'Tempo de conversão excedido',
                     'created_at': time.time(),
                 })
             except Exception as e:
-                _save_job_meta(job_id, {
-                    'status': 'error',
-                    'original_name': filename,
-                    'error': str(e),
-                    'created_at': time.time(),
-                })
+                print(f'[CONVERT] Erro: {job_id}: {e}')
+                try:
+                    _save_job_meta(job_id, {
+                        'status': 'error',
+                        'original_name': filename,
+                        'error': str(e),
+                        'created_at': time.time(),
+                    })
+                except Exception:
+                    pass
 
         threading.Thread(target=run_conversion, daemon=True).start()
 

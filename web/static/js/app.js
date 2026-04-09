@@ -430,29 +430,65 @@ async function convertFile() {
         const formData = new FormData();
         formData.append('file', file);
 
-        // Passo 1: Upload do arquivo e criação do job
-        const startResponse = await fetch('/api/convert', {
-            method: 'POST',
-            body: formData
+        // Upload com progresso usando XMLHttpRequest
+        const convertFill = document.getElementById('convert-fill');
+        const convertText = document.getElementById('convert-text');
+        convertText.textContent = 'Enviando arquivo... 0%';
+        convertFill.style.width = '0%';
+        convertFill.style.animation = 'none';
+
+        const startData = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    convertFill.style.width = pct + '%';
+                    const loadedMB = (e.loaded / 1024 / 1024).toFixed(1);
+                    const totalMB = (e.total / 1024 / 1024).toFixed(1);
+                    convertText.textContent = `Enviando arquivo... ${pct}% (${loadedMB}/${totalMB} MB)`;
+                }
+            });
+
+            xhr.addEventListener('load', () => {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    if (xhr.status >= 400) {
+                        if (data.need_ffmpeg) {
+                            showFFmpegModal();
+                            reject(new Error('__ffmpeg__'));
+                            return;
+                        }
+                        reject(new Error(data.error || t('errorConvert')));
+                    } else {
+                        resolve(data);
+                    }
+                } catch {
+                    reject(new Error(t('errorConvert')));
+                }
+            });
+
+            xhr.addEventListener('error', () => reject(new Error(t('errorConvert'))));
+            xhr.addEventListener('abort', () => reject(new Error('Upload cancelado')));
+
+            xhr.open('POST', '/api/convert');
+            xhr.send(formData);
         });
 
-        if (!startResponse.ok) {
-            const data = await readApiErrorBody(startResponse);
-            if (data.need_ffmpeg) {
-                showFFmpegModal();
-                return;
-            }
-            throw new Error(data.error || t('errorConvert'));
-        }
-
-        const startData = await startResponse.json();
         currentJobId = startData.job_id;
+
+        // Upload concluído — iniciar animação de progresso indeterminado
+        convertFill.style.width = '100%';
+        convertFill.style.animation = 'progressPulse 1.5s ease-in-out infinite';
+        convertText.textContent = 'Convertendo... aguarde';
 
         // Passo 2: Polling do status da conversão
         startConvertPolling();
 
     } catch (error) {
-        showMessage('converter', error.message, 'error');
+        if (error.message !== '__ffmpeg__') {
+            showMessage('converter', error.message, 'error');
+        }
         elements.convertBtn.disabled = false;
         elements.convertProgress.classList.add('hidden');
     }
@@ -462,7 +498,7 @@ function startConvertPolling() {
     if (convertPollingInterval) clearInterval(convertPollingInterval);
 
     let pollCount = 0;
-    const maxPolls = 720; // 1 hora (720 × 5s)
+    const maxPolls = 1800; // 1 hora (1800 × 2s)
 
     convertPollingInterval = setInterval(async () => {
         pollCount++;
@@ -539,13 +575,12 @@ function startConvertPolling() {
             }
 
             // Status 'pending' ou 'converting' — continuar polling
-            // Atualizar texto de progresso
             document.getElementById('convert-text').textContent = 'Convertendo... aguarde';
 
         } catch (error) {
             console.error('Error polling convert status:', error);
         }
-    }, 5000);
+    }, 2000);
 }
 
 function stopConvertPolling() {
